@@ -121,7 +121,7 @@ td {
 
 <script>
 
-// ===== 20 РИСКОВ (как в исходнике) =====
+// ===== ДАННЫЕ =====
 const data = [
 {id:"R1", name:"Высокая стоимость оборудования", cat:"Финансовый", p:4, i:5, status:"Открыт", owner:"Финансовый директор", date:"2026-12-01", kri:"Рост CAPEX > 15%"},
 {id:"R2", name:"Ограничение расстояния передачи", cat:"Технологический", p:3, i:5, status:"Открыт", owner:"Технический директор", date:"2026-11-15", kri:"Дальность < 120 км"},
@@ -179,10 +179,11 @@ function renderHeatmap(filtered){
 let matrix = Array.from({length:5},()=>Array(5).fill(0));
 let labels = Array.from({length:5},()=>Array(5).fill(""));
 
+// группировка рисков
 filtered.forEach(r=>{
 let x = r.p - 1;
 let y = r.i - 1;
-matrix[y][x] = Math.max(matrix[y][x], r.p*r.i);
+matrix[y][x] = Math.max(matrix[y][x], r.p * r.i);
 labels[y][x] += r.id + "<br>";
 });
 
@@ -191,17 +192,25 @@ z: matrix,
 x: [1,2,3,4,5],
 y: [1,2,3,4,5],
 type: 'heatmap',
+
 colorscale: [
 [0, "#2ecc71"],
 [0.5, "#f1c40f"],
 [1, "#e74c3c"]
 ],
+
 text: labels,
+texttemplate: "%{text}",
+textfont: { size: 12, color: "black" },
+
 hovertemplate:
-"Вероятность: %{x}<br>Влияние: %{y}<br>%{text}<extra></extra>",
+"Вероятность: %{x}<br>" +
+"Влияние: %{y}<br>" +
+"%{text}<extra></extra>",
+
 showscale: true
 }],{
-title: "Матрица рисков (Probability × Impact)",
+title: "Матрица рисков",
 xaxis: {title:"Вероятность"},
 yaxis: {title:"Влияние"}
 });
