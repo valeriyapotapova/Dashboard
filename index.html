@@ -16,7 +16,7 @@ body {
 .header {
     background: #1f2a44;
     color: white;
-    padding: 18px 20px;
+    padding: 18px;
     font-size: 20px;
     font-weight: bold;
 }
@@ -39,28 +39,25 @@ body {
     padding: 15px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    font-size: 14px;
 }
 
 select {
     padding: 8px;
     margin-bottom: 15px;
     border-radius: 8px;
-    border: 1px solid #ccc;
-    background: white;
 }
 
 .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    margin-bottom: 20px;
 }
 
 table {
     width: 100%;
     background: white;
     border-collapse: collapse;
+    margin-top: 20px;
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -77,23 +74,6 @@ td {
     padding: 8px;
     border-bottom: 1px solid #eee;
     font-size: 13px;
-}
-
-tr:hover {
-    background: #f0f4ff;
-}
-
-.high { color: red; font-weight: bold; }
-.medium { color: orange; }
-.low { color: green; }
-
-@media (max-width: 900px) {
-    .grid {
-        grid-template-columns: 1fr;
-    }
-    .kpi {
-        grid-template-columns: 1fr;
-    }
 }
 </style>
 </head>
@@ -115,8 +95,8 @@ tr:hover {
 <select id="filter"></select>
 
 <div class="grid">
-    <div id="heatmap"></div>
-    <div id="chart"></div>
+<div id="heatmap"></div>
+<div id="chart"></div>
 </div>
 
 <table>
@@ -141,7 +121,7 @@ tr:hover {
 
 <script>
 
-// ===== ДАННЫЕ (НЕ ИЗМЕНЯЛИСЬ) =====
+// ===== 20 РИСКОВ (как в исходнике) =====
 const data = [
 {id:"R1", name:"Высокая стоимость оборудования", cat:"Финансовый", p:4, i:5, status:"Открыт", owner:"Финансовый директор", date:"2026-12-01", kri:"Рост CAPEX > 15%"},
 {id:"R2", name:"Ограничение расстояния передачи", cat:"Технологический", p:3, i:5, status:"Открыт", owner:"Технический директор", date:"2026-11-15", kri:"Дальность < 120 км"},
@@ -165,12 +145,7 @@ const data = [
 {id:"R20", name:"Падение спроса", cat:"Рыночный", p:4, i:4, status:"Открыт", owner:"Маркетинг", date:"2027-02-01", kri:"Продажи"}
 ];
 
-// ===== CORE =====
-function getFiltered(){
-    const val = document.getElementById("filter").value;
-    return val === "all" ? data : data.filter(r => r.cat === val);
-}
-
+// ===== KPI =====
 function updateKPI(filtered){
 document.getElementById("total").innerText = filtered.length;
 document.getElementById("critical").innerText =
@@ -179,9 +154,10 @@ document.getElementById("closed").innerText =
 filtered.filter(r=>r.status==="Закрыт").length;
 }
 
+// ===== TABLE =====
 function renderTable(filtered){
-const tbody = document.getElementById("tbody");
-tbody.innerHTML = filtered.map(r => `
+document.getElementById("tbody").innerHTML =
+filtered.map(r=>`
 <tr>
 <td>${r.id}</td>
 <td>${r.name}</td>
@@ -197,29 +173,41 @@ tbody.innerHTML = filtered.map(r => `
 `).join("");
 }
 
+// ===== HEATMAP =====
 function renderHeatmap(filtered){
+
 let matrix = Array.from({length:5},()=>Array(5).fill(0));
 let labels = Array.from({length:5},()=>Array(5).fill(""));
 
 filtered.forEach(r=>{
-matrix[r.i-1][r.p-1] += 1;
-labels[r.i-1][r.p-1] += r.id + " ";
+let x = r.p - 1;
+let y = r.i - 1;
+matrix[y][x] = Math.max(matrix[y][x], r.p*r.i);
+labels[y][x] += r.id + "<br>";
 });
 
 Plotly.newPlot('heatmap',[{
 z: matrix,
 x: [1,2,3,4,5],
 y: [1,2,3,4,5],
-type:'heatmap',
+type: 'heatmap',
+colorscale: [
+[0, "#2ecc71"],
+[0.5, "#f1c40f"],
+[1, "#e74c3c"]
+],
 text: labels,
-hoverinfo:'text'
+hovertemplate:
+"Вероятность: %{x}<br>Влияние: %{y}<br>%{text}<extra></extra>",
+showscale: true
 }],{
-title:"Матрица рисков (5x5)",
-xaxis:{title:"Вероятность"},
-yaxis:{title:"Влияние"}
+title: "Матрица рисков (Probability × Impact)",
+xaxis: {title:"Вероятность"},
+yaxis: {title:"Влияние"}
 });
 }
 
+// ===== BAR =====
 function renderChart(filtered){
 Plotly.newPlot('chart',[{
 x: filtered.map(r=>r.id),
@@ -228,17 +216,10 @@ type:'bar'
 }],{title:"Уровень рисков"});
 }
 
-function render(){
-const filtered = getFiltered();
-updateKPI(filtered);
-renderTable(filtered);
-renderHeatmap(filtered);
-renderChart(filtered);
-}
-
+// ===== FILTER =====
 function initFilter(){
-const cats = [...new Set(data.map(d=>d.cat))];
-const select = document.getElementById("filter");
+let cats = [...new Set(data.map(d=>d.cat))];
+let select = document.getElementById("filter");
 
 select.innerHTML =
 '<option value="all">Все категории</option>' +
@@ -247,7 +228,17 @@ cats.map(c=>`<option value="${c}">${c}</option>`).join("");
 select.addEventListener("change", render);
 }
 
-// ===== INIT =====
+// ===== RENDER =====
+function render(){
+let val = document.getElementById("filter").value;
+let filtered = val==="all" ? data : data.filter(r=>r.cat===val);
+
+updateKPI(filtered);
+renderTable(filtered);
+renderHeatmap(filtered);
+renderChart(filtered);
+}
+
 initFilter();
 render();
 
