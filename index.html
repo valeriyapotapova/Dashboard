@@ -2,254 +2,183 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quantum Risk Dashboard</title>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f6f9;
-    color: #1f2a44;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
 }
 
 .header {
-    background: #1f2a44;
-    color: white;
-    padding: 18px;
-    font-size: 20px;
-    font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 0.5px solid #e2e4e8;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
 }
+.header-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: #042C53;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.header-icon svg { width: 20px; height: 20px; }
+.header-title { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+.header-sub   { font-size: 12px; color: #6b7280; margin-top: 1px; }
 
-.container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
 }
+.kpi-card {
+  background: #fff;
+  border: 0.5px solid #e2e4e8;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.kpi-value { font-size: 30px; font-weight: 600; line-height: 1; color: #1a1a2e; }
+.kpi-value.danger  { color: #A32D2D; }
+.kpi-value.success { color: #3B6D11; }
 
-.kpi {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
 }
+.filter-btn {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 0.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.filter-btn:hover  { background: #f3f4f6; }
+.filter-btn.active { background: #042C53; border-color: #042C53; color: #B5D4F4; }
 
-.card {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
 }
+.chart-card {
+  background: #fff;
+  border: 0.5px solid #e2e4e8;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.chart-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 14px;
+}
+.matrix-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+.bar-wrap     { position: relative; width: 100%; height: 240px; }
 
-select {
-    padding: 8px;
-    margin-bottom: 15px;
-    border-radius: 8px;
+.table-card {
+  background: #fff;
+  border: 0.5px solid #e2e4e8;
+  border-radius: 14px;
+  overflow: hidden;
 }
+.table-scroll { overflow-x: auto; }
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.risk-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  border-bottom: 0.5px solid #e2e4e8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: #fafafa;
+}
+.risk-table td {
+  padding: 9px 14px;
+  border-bottom: 0.5px solid #f0f2f5;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+.risk-table tr:last-child td { border-bottom: none; }
+.risk-table tr:hover td { background: #f9fafb; }
 
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
 }
+.badge-critical { background: #FCEBEB; color: #791F1F; }
+.badge-high     { background: #FAEEDA; color: #633806; }
+.badge-medium   { background: #EAF3DE; color: #27500A; }
+.badge-low      { background: #E6F1FB; color: #0C447C; }
 
-table {
-    width: 100%;
-    background: white;
-    border-collapse: collapse;
-    margin-top: 20px;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
+.status { display: flex; align-items: center; gap: 5px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-open    { background: #E24B4A; }
+.dot-control { background: #EF9F27; }
+.dot-work    { background: #378ADD; }
+.dot-closed  { background: #639922; }
 
-th {
-    background: #1f2a44;
-    color: white;
-    padding: 10px;
-    font-size: 13px;
-}
-
-td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    font-size: 13px;
-}
+.id-chip { font-weight: 600; color: #185FA5; }
 </style>
 </head>
-
 <body>
 
-<div class="header">
-Дашборд рисков: Система квантового шифрования
-</div>
+<div class="page">
 
-<div class="container">
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#B5D4F4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Дашборд рисков</div>
+      <div class="header-sub">Система квантового шифрования</div>
+    </div>
+  </div>
 
-<div class="kpi">
-<div class="card">Всего рисков: <b id="total"></b></div>
-<div class="card">Критичные: <b id="critical"></b></div>
-<div class="card">Закрытые: <b id="closed"></b></div>
-</div>
-
-<select id="filter"></select>
-
-<div class="grid">
-<div id="heatmap"></div>
-<div id="chart"></div>
-</div>
-
-<table>
-<thead>
-<tr>
-<th>ID</th>
-<th>Название</th>
-<th>Категория</th>
-<th>Вероятность</th>
-<th>Влияние</th>
-<th>Уровень</th>
-<th>Статус</th>
-<th>Владелец</th>
-<th>Срок</th>
-<th>KRI</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
-
-</div>
-
-<script>
-
-// ===== ДАННЫЕ =====
-const data = [
-{id:"R1", name:"Высокая стоимость оборудования", cat:"Финансовый", p:4, i:5, status:"Открыт", owner:"Финансовый директор", date:"2026-12-01", kri:"Рост CAPEX > 15%"},
-{id:"R2", name:"Ограничение расстояния передачи", cat:"Технологический", p:3, i:5, status:"Открыт", owner:"Технический директор", date:"2026-11-15", kri:"Дальность < 120 км"},
-{id:"R3", name:"Длительная сертификация", cat:"Регуляторный", p:4, i:4, status:"Под контролем", owner:"Юридический отдел", date:"2027-02-01", kri:"Срок > 12 мес"},
-{id:"R4", name:"Низкий спрос на технологию", cat:"Рыночный", p:3, i:4, status:"Открыт", owner:"Маркетинг", date:"2027-03-01", kri:"< 20 клиентов"},
-{id:"R5", name:"Высокое энергопотребление", cat:"Технологический", p:2, i:3, status:"Закрыт", owner:"Инженерный отдел", date:"2026-10-01", kri:"> 8 кВт"},
-{id:"R6", name:"Недостаток финансирования", cat:"Финансовый", p:5, i:5, status:"Открыт", owner:"CEO", date:"2026-12-20", kri:"Cash < 0"},
-{id:"R7", name:"Сбой квантового канала", cat:"Технологический", p:4, i:5, status:"Открыт", owner:"Инженер", date:"2026-11-10", kri:"Ошибка > 12%"},
-{id:"R8", name:"Утечка данных", cat:"Безопасность", p:3, i:5, status:"В работе", owner:"CISO", date:"2026-11-25", kri:"Инциденты"},
-{id:"R9", name:"Отсутствие специалистов", cat:"HR", p:4, i:4, status:"Открыт", owner:"HR", date:"2026-12-15", kri:"< 3 специалистов"},
-{id:"R10", name:"Срыв сроков проекта", cat:"Управленческий", p:5, i:4, status:"Открыт", owner:"PM", date:"2026-11-30", kri:"Сдвиг сроков"},
-{id:"R11", name:"Ошибки в алгоритмах", cat:"Технологический", p:3, i:4, status:"Открыт", owner:"R&D", date:"2026-12-05", kri:"Баги"},
-{id:"R12", name:"Рост затрат", cat:"Финансовый", p:4, i:4, status:"Под контролем", owner:"CFO", date:"2026-12-10", kri:"+20%"},
-{id:"R13", name:"Проблемы с поставщиками", cat:"Логистика", p:3, i:3, status:"Открыт", owner:"Supply", date:"2026-11-20", kri:"Задержки"},
-{id:"R14", name:"Нарушение стандартов", cat:"Регуляторный", p:2, i:5, status:"Открыт", owner:"Юристы", date:"2027-01-01", kri:"Штрафы"},
-{id:"R15", name:"Кибератаки", cat:"Безопасность", p:4, i:5, status:"Открыт", owner:"Security", date:"2026-11-18", kri:"Атаки"},
-{id:"R16", name:"Отказ оборудования", cat:"Технологический", p:3, i:4, status:"Открыт", owner:"Инженер", date:"2026-12-01", kri:"Сбои"},
-{id:"R17", name:"Низкая производительность", cat:"Технологический", p:2, i:3, status:"Открыт", owner:"R&D", date:"2026-12-10", kri:"Скорость"},
-{id:"R18", name:"Проблемы интеграции", cat:"IT", p:3, i:4, status:"Открыт", owner:"IT", date:"2026-12-05", kri:"Ошибки API"},
-{id:"R19", name:"Юридические риски", cat:"Регуляторный", p:3, i:5, status:"Открыт", owner:"Юристы", date:"2027-01-10", kri:"Иски"},
-{id:"R20", name:"Падение спроса", cat:"Рыночный", p:4, i:4, status:"Открыт", owner:"Маркетинг", date:"2027-02-01", kri:"Продажи"}
-];
-
-// ===== KPI =====
-function updateKPI(f){
-document.getElementById("total").innerText = f.length;
-document.getElementById("critical").innerText = f.filter(r=>r.p*r.i>=16).length;
-document.getElementById("closed").innerText = f.filter(r=>r.status==="Закрыт").length;
-}
-
-// ===== TABLE =====
-function renderTable(f){
-document.getElementById("tbody").innerHTML =
-f.map(r=>`
-<tr>
-<td>${r.id}</td>
-<td>${r.name}</td>
-<td>${r.cat}</td>
-<td>${r.p}</td>
-<td>${r.i}</td>
-<td>${r.p*r.i}</td>
-<td>${r.status}</td>
-<td>${r.owner}</td>
-<td>${r.date}</td>
-<td>${r.kri}</td>
-</tr>
-`).join("");
-}
-
-// ===== ПРАВИЛЬНАЯ МАТРИЦА =====
-function renderHeatmap(f){
-
-let cell = Array.from({length:5},()=>Array.from({length:5},()=>[]));
-let z = Array.from({length:5},()=>Array(5).fill(0));
-
-f.forEach(r=>{
-cell[r.i-1][r.p-1].push(r.id);
-});
-
-for(let i=0;i<5;i++){
-for(let j=0;j<5;j++){
-if(cell[i][j].length){
-z[i][j] = cell[i][j].length;
-}
-}
-}
-
-let text = cell.map(row=>row.map(v=>v.join("<br>")));
-
-Plotly.newPlot('heatmap',[{
-z: z,
-x: [1,2,3,4,5],
-y: [1,2,3,4,5],
-type:'heatmap',
-
-colorscale:[
-[0,"#2ecc71"],
-[0.5,"#f1c40f"],
-[1,"#e74c3c"]
-],
-
-text:text,
-texttemplate:"%{text}",
-textfont:{size:12,color:"black"},
-hovertemplate:
-"Вероятность: %{x}<br>Влияние: %{y}<br>%{text}<extra></extra>"
-}],{
-title:"Матрица рисков",
-xaxis:{title:"Вероятность"},
-yaxis:{title:"Влияние"}
-});
-}
-
-// ===== BAR =====
-function renderChart(f){
-Plotly.newPlot('chart',[{
-x:f.map(r=>r.id),
-y:f.map(r=>r.p*r.i),
-type:'bar'
-}],{title:"Уровень рисков"});
-}
-
-// ===== FILTER =====
-function init(){
-let cats=[...new Set(data.map(d=>d.cat))];
-let s=document.getElementById("filter");
-
-s.innerHTML='<option value="all">Все категории</option>'+
-cats.map(c=>`<option>${c}</option>`).join("");
-
-s.onchange=render;
-}
-
-// ===== RENDER =====
-function render(){
-let v=document.getElementById("filter").value;
-let f=v==="all"?data:data.filter(r=>r.cat===v);
-
-updateKPI(f);
-renderTable(f);
-renderHeatmap(f);
-renderChart(f);
-}
-
-init();
-render();
-
-</script>
-
-</body>
-</html>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Всего рисков</div>
