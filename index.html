@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Quantum Risk Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f6f9;
+}
+
+.header {
+    background: #1f2a44;
+    color: white;
+    padding: 15px;
+    font-size: 20px;
+}
+
+.container {
+    padding: 20px;
+}
+
+.kpi {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    flex: 1;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.high { color: red; font-weight: bold; }
+.medium { color: orange; }
+.low { color: green; }
+
+select {
+    padding: 6px;
+    margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+Дашборд рисков: Система квантового шифрования
+</div>
+
+<div class="container">
+
+<div class="kpi">
+<div class="card">Всего рисков: <b id="total"></b></div>
+<div class="card">Критичные: <b id="critical"></b></div>
+<div class="card">Закрытые: <b id="closed"></b></div>
+</div>
+
+<select id="filter"></select>
+
+<div class="grid">
+    <div id="heatmap"></div>
+    <div id="chart"></div>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Название</th>
+<th>Категория</th>
+<th>Вероятность</th>
+<th>Влияние</th>
+<th>Уровень</th>
+<th>Статус</th>
+<th>Владелец</th>
+<th>Срок</th>
+<th>KRI</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+</div>
+
+<script>
+
+// ===== ВСЕ 20 СТРОК ИЗ EXCEL =====
+const data = [
+{id:"R1", name:"Высокая стоимость оборудования", cat:"Финансовый", p:4, i:5, status:"Открыт", owner:"Финансовый директор", date:"2026-12-01", kri:"Рост CAPEX > 15%"},
+{id:"R2", name:"Ограничение расстояния передачи", cat:"Технологический", p:3, i:5, status:"Открыт", owner:"Технический директор", date:"2026-11-15", kri:"Дальность < 120 км"},
+{id:"R3", name:"Длительная сертификация", cat:"Регуляторный", p:4, i:4, status:"Под контролем", owner:"Юридический отдел", date:"2027-02-01", kri:"Срок > 12 мес"},
+{id:"R4", name:"Низкий спрос на технологию", cat:"Рыночный", p:3, i:4, status:"Открыт", owner:"Маркетинг", date:"2027-03-01", kri:"< 20 клиентов"},
+{id:"R5", name:"Высокое энергопотребление", cat:"Технологический", p:2, i:3, status:"Закрыт", owner:"Инженерный отдел", date:"2026-10-01", kri:"> 8 кВт"},
+{id:"R6", name:"Недостаток финансирования", cat:"Финансовый", p:5, i:5, status:"Открыт", owner:"CEO", date:"2026-12-20", kri:"Cash < 0"},
+{id:"R7", name:"Сбой квантового канала", cat:"Технологический", p:4, i:5, status:"Открыт", owner:"Инженер", date:"2026-11-10", kri:"Ошибка > 12%"},
+{id:"R8", name:"Утечка данных", cat:"Безопасность", p:3, i:5, status:"В работе", owner:"CISO", date:"2026-11-25", kri:"Инциденты"},
+{id:"R9", name:"Отсутствие специалистов", cat:"HR", p:4, i:4, status:"Открыт", owner:"HR", date:"2026-12-15", kri:"< 3 специалистов"},
+{id:"R10", name:"Срыв сроков проекта", cat:"Управленческий", p:5, i:4, status:"Открыт", owner:"PM", date:"2026-11-30", kri:"Сдвиг сроков"},
+{id:"R11", name:"Ошибки в алгоритмах", cat:"Технологический", p:3, i:4, status:"Открыт", owner:"R&D", date:"2026-12-05", kri:"Баги"},
+{id:"R12", name:"Рост затрат", cat:"Финансовый", p:4, i:4, status:"Под контролем", owner:"CFO", date:"2026-12-10", kri:"+20%"},
+{id:"R13", name:"Проблемы с поставщиками", cat:"Логистика", p:3, i:3, status:"Открыт", owner:"Supply", date:"2026-11-20", kri:"Задержки"},
+{id:"R14", name:"Нарушение стандартов", cat:"Регуляторный", p:2, i:5, status:"Открыт", owner:"Юристы", date:"2027-01-01", kri:"Штрафы"},
+{id:"R15", name:"Кибератаки", cat:"Безопасность", p:4, i:5, status:"Открыт", owner:"Security", date:"2026-11-18", kri:"Атаки"},
+{id:"R16", name:"Отказ оборудования", cat:"Технологический", p:3, i:4, status:"Открыт", owner:"Инженер", date:"2026-12-01", kri:"Сбои"},
+{id:"R17", name:"Низкая производительность", cat:"Технологический", p:2, i:3, status:"Открыт", owner:"R&D", date:"2026-12-10", kri:"Скорость"},
+{id:"R18", name:"Проблемы интеграции", cat:"IT", p:3, i:4, status:"Открыт", owner:"IT", date:"2026-12-05", kri:"Ошибки API"},
+{id:"R19", name:"Юридические риски", cat:"Регуляторный", p:3, i:5, status:"Открыт", owner:"Юристы", date:"2027-01-10", kri:"Иски"},
+{id:"R20", name:"Падение спроса", cat:"Рыночный", p:4, i:4, status:"Открыт", owner:"Маркетинг", date:"2027-02-01", kri:"Продажи"}
+];
+
+// ===== KPI =====
+function updateKPI(filtered){
+document.getElementById("total").innerText = filtered.length;
+document.getElementById("critical").innerText =
+filtered.filter(r=>r.p*r.i>=16).length;
+document.getElementById("closed").innerText =
+filtered.filter(r=>r.status==="Закрыт").length;
+}
+
+// ===== TABLE =====
+function renderTable(filtered){
+let tbody = document.getElementById("tbody");
+tbody.innerHTML="";
+filtered.forEach(r=>{
+tbody.innerHTML += `
+<tr>
+<td>${r.id}</td>
+<td>${r.name}</td>
+<td>${r.cat}</td>
+<td>${r.p}</td>
+<td>${r.i}</td>
+<td>${r.p*r.i}</td>
+<td>${r.status}</td>
+<td>${r.owner}</td>
+<td>${r.date}</td>
+<td>${r.kri}</td>
+</tr>`;
+});
+}
+
+// ===== HEATMAP 5x5 =====
+function renderHeatmap(filtered){
+
+let matrix = Array.from({length:5},()=>Array(5).fill(0));
+let labels = Array.from({length:5},()=>Array(5).fill(""));
+
+filtered.forEach(r=>{
+let x = r.p-1;
+let y = r.i-1;
+matrix[y][x] += 1;
+labels[y][x] += r.id + " ";
+});
+
+Plotly.newPlot('heatmap',[{
+z: matrix,
+x: [1,2,3,4,5],
+y: [1,2,3,4,5],
+type:'heatmap',
+text: labels,
+hoverinfo:'text'
+}],{
+title:"Матрица рисков (5x5)",
+yaxis:{title:"Влияние"},
+xaxis:{title:"Вероятность"}
+});
+}
+
+// ===== BAR =====
+function renderChart(filtered){
+Plotly.newPlot('chart',[{
+x: filtered.map(r=>r.id),
+y: filtered.map(r=>r.p*r.i),
+type:'bar'
+}],{title:"Уровень рисков"});
+}
+
+// ===== FILTER =====
+function initFilter(){
+let cats = [...new Set(data.map(d=>d.cat))];
+let select = document.getElementById("filter");
+
+select.innerHTML = '<option value="all">Все категории</option>' +
+cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+select.addEventListener("change",()=>{
+render(select.value);
+});
+}
