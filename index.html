@@ -182,3 +182,251 @@ body {
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">Всего рисков</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Критичные</div>
+      <div class="kpi-value danger" id="kpi-critical">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Закрытые</div>
+      <div class="kpi-value success" id="kpi-closed">—</div>
+    </div>
+  </div>
+
+  <div class="controls" id="filters"></div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-label">Матрица рисков</div>
+      <div class="matrix-wrap">
+        <canvas id="matrixChart" role="img" aria-label="Матрица рисков: вероятность × влияние"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">Уровень рисков</div>
+      <div class="bar-wrap">
+        <canvas id="barChart" role="img" aria-label="Уровень рисков по ID"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-scroll">
+      <table class="risk-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Вер.</th>
+            <th>Влияние</th>
+            <th>Уровень</th>
+            <th>Статус</th>
+            <th>Владелец</th>
+            <th>Срок</th>
+            <th>KRI</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const data = [
+  { id:"R1",  name:"Высокая стоимость оборудования",  cat:"Финансовый",     p:4, i:5, status:"Открыт",        owner:"Финансовый директор",  date:"2026-12-01", kri:"Рост CAPEX > 15%"    },
+  { id:"R2",  name:"Ограничение расстояния передачи", cat:"Технологический", p:3, i:5, status:"Открыт",        owner:"Технический директор", date:"2026-11-15", kri:"Дальность < 120 км"  },
+  { id:"R3",  name:"Длительная сертификация",         cat:"Регуляторный",    p:4, i:4, status:"Под контролем", owner:"Юридический отдел",    date:"2027-02-01", kri:"Срок > 12 мес"       },
+  { id:"R4",  name:"Низкий спрос на технологию",      cat:"Рыночный",        p:3, i:4, status:"Открыт",        owner:"Маркетинг",            date:"2027-03-01", kri:"< 20 клиентов"       },
+  { id:"R5",  name:"Высокое энергопотребление",        cat:"Технологический", p:2, i:3, status:"Закрыт",        owner:"Инженерный отдел",     date:"2026-10-01", kri:"> 8 кВт"             },
+  { id:"R6",  name:"Недостаток финансирования",        cat:"Финансовый",     p:5, i:5, status:"Открыт",        owner:"CEO",                  date:"2026-12-20", kri:"Cash < 0"            },
+  { id:"R7",  name:"Сбой квантового канала",           cat:"Технологический", p:4, i:5, status:"Открыт",        owner:"Инженер",              date:"2026-11-10", kri:"Ошибка > 12%"        },
+  { id:"R8",  name:"Утечка данных",                    cat:"Безопасность",    p:3, i:5, status:"В работе",      owner:"CISO",                 date:"2026-11-25", kri:"Инциденты"           },
+  { id:"R9",  name:"Отсутствие специалистов",          cat:"HR",              p:4, i:4, status:"Открыт",        owner:"HR",                   date:"2026-12-15", kri:"< 3 специалистов"    },
+  { id:"R10", name:"Срыв сроков проекта",              cat:"Управленческий",  p:5, i:4, status:"Открыт",        owner:"PM",                   date:"2026-11-30", kri:"Сдвиг сроков"        },
+  { id:"R11", name:"Ошибки в алгоритмах",              cat:"Технологический", p:3, i:4, status:"Открыт",        owner:"R&D",                  date:"2026-12-05", kri:"Баги"                },
+  { id:"R12", name:"Рост затрат",                      cat:"Финансовый",     p:4, i:4, status:"Под контролем", owner:"CFO",                  date:"2026-12-10", kri:"+20%"                },
+  { id:"R13", name:"Проблемы с поставщиками",          cat:"Логистика",       p:3, i:3, status:"Открыт",        owner:"Supply",               date:"2026-11-20", kri:"Задержки"            },
+  { id:"R14", name:"Нарушение стандартов",             cat:"Регуляторный",    p:2, i:5, status:"Открыт",        owner:"Юристы",               date:"2027-01-01", kri:"Штрафы"              },
+  { id:"R15", name:"Кибератаки",                       cat:"Безопасность",    p:4, i:5, status:"Открыт",        owner:"Security",             date:"2026-11-18", kri:"Атаки"               },
+  { id:"R16", name:"Отказ оборудования",               cat:"Технологический", p:3, i:4, status:"Открыт",        owner:"Инженер",              date:"2026-12-01", kri:"Сбои"                },
+  { id:"R17", name:"Низкая производительность",        cat:"Технологический", p:2, i:3, status:"Открыт",        owner:"R&D",                  date:"2026-12-10", kri:"Скорость"            },
+  { id:"R18", name:"Проблемы интеграции",              cat:"IT",              p:3, i:4, status:"Открыт",        owner:"IT",                   date:"2026-12-05", kri:"Ошибки API"          },
+  { id:"R19", name:"Юридические риски",                cat:"Регуляторный",    p:3, i:5, status:"Открыт",        owner:"Юристы",               date:"2027-01-10", kri:"Иски"                },
+  { id:"R20", name:"Падение спроса",                   cat:"Рыночный",        p:4, i:4, status:"Открыт",        owner:"Маркетинг",            date:"2027-02-01", kri:"Продажи"             }
+];
+
+let matrixChart, barChart;
+let activeFilter = 'all';
+
+function sc(r) { return r.p * r.i; }
+
+function levelBadge(s) {
+  if (s >= 16) return `<span class="badge badge-critical">${s}</span>`;
+  if (s >= 12) return `<span class="badge badge-high">${s}</span>`;
+  if (s >= 6)  return `<span class="badge badge-medium">${s}</span>`;
+  return `<span class="badge badge-low">${s}</span>`;
+}
+
+function statusHTML(s) {
+  const cls = s === 'Закрыт'        ? 'dot-closed'
+            : s === 'Под контролем' ? 'dot-control'
+            : s === 'В работе'      ? 'dot-work'
+            :                         'dot-open';
+  return `<span class="status"><span class="dot ${cls}"></span>${s}</span>`;
+}
+
+function bubbleColor(s) {
+  if (s >= 16) return 'rgba(162,45,45,0.75)';
+  if (s >= 9)  return 'rgba(186,117,23,0.65)';
+  return 'rgba(63,109,17,0.55)';
+}
+
+function updateKPI(f) {
+  document.getElementById('kpi-total').textContent    = f.length;
+  document.getElementById('kpi-critical').textContent = f.filter(r => sc(r) >= 16).length;
+  document.getElementById('kpi-closed').textContent   = f.filter(r => r.status === 'Закрыт').length;
+}
+
+function renderTable(f) {
+  document.getElementById('tbody').innerHTML = f.map(r => `
+    <tr>
+      <td class="id-chip">${r.id}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.name}</td>
+      <td style="color:#6b7280">${r.cat}</td>
+      <td>${r.p}</td>
+      <td>${r.i}</td>
+      <td>${levelBadge(sc(r))}</td>
+      <td>${statusHTML(r.status)}</td>
+      <td style="color:#6b7280">${r.owner}</td>
+      <td style="color:#6b7280">${r.date}</td>
+      <td style="color:#9ca3af;font-size:11px">${r.kri}</td>
+    </tr>
+  `).join('');
+}
+
+function renderMatrix(f) {
+  const cells = {};
+  f.forEach(r => {
+    const key = `${r.p},${r.i}`;
+    if (!cells[key]) cells[key] = [];
+    cells[key].push(r.id);
+  });
+  const bubbles = Object.entries(cells).map(([key, ids]) => {
+    const [px, py] = key.split(',').map(Number);
+    return { x: px, y: py, r: Math.max(16, ids.length * 11), ids, score: px * py };
+  });
+  if (matrixChart) matrixChart.destroy();
+  matrixChart = new Chart(document.getElementById('matrixChart'), {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data: bubbles.map(b => ({ x: b.x, y: b.y, r: b.r })),
+        backgroundColor: bubbles.map(b => bubbleColor(b.score)),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const b = bubbles[ctx.dataIndex];
+              return `${b.ids.join(', ')} · Score ${b.score}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          min: 0.5, max: 5.5,
+          title: { display: true, text: 'Вероятность', color: '#9ca3af', font: { size: 11 } },
+          ticks: { stepSize: 1, color: '#9ca3af', font: { size: 10 } },
+          grid:  { color: 'rgba(0,0,0,0.05)' }
+        },
+        y: {
+          min: 0.5, max: 5.5,
+          title: { display: true, text: 'Влияние', color: '#9ca3af', font: { size: 11 } },
+          ticks: { stepSize: 1, color: '#9ca3af', font: { size: 10 } },
+          grid:  { color: 'rgba(0,0,0,0.05)' }
+        }
+      }
+    }
+  });
+}
+
+function renderBar(f) {
+  const sorted = [...f].sort((a, b) => sc(b) - sc(a));
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(r => r.id),
+      datasets: [{
+        data: sorted.map(r => sc(r)),
+        backgroundColor: sorted.map(r => {
+          const s = sc(r);
+          return s >= 16 ? '#A32D2D' : s >= 9 ? '#BA7517' : '#3B6D11';
+        }),
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `Уровень: ${ctx.raw}` } }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 9 }, autoSkip: true, maxRotation: 0 },
+          grid:  { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#9ca3af', font: { size: 10 } },
+          grid:  { color: 'rgba(0,0,0,0.05)' }
+        }
+      }
+    }
+  });
+}
+
+function initFilters() {
+  const cats = ['all', ...new Set(data.map(d => d.cat))];
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = cats.map(c =>
+    `<button class="filter-btn ${c === 'all' ? 'active' : ''}" data-cat="${c}">${c === 'all' ? 'Все' : c}</button>`
+  ).join('');
+  wrap.addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.cat;
+    render();
+  });
+}
+
+function render() {
+  const f = activeFilter === 'all' ? data : data.filter(r => r.cat === activeFilter);
+  updateKPI(f);
+  renderTable(f);
+  renderMatrix(f);
+  renderBar(f);
+}
+
+initFilters();
+render();
+</script>
+
+</body>
+</html>
